@@ -2,7 +2,7 @@
 
 # MC Video Generator
 
-[中文版本](readme_zh.md)
+[中文版本](readme.zh.md)
 
 ## Overview
 A script for transferring videos into Minecraft. It can also be used to create map art, dynamic structures, and more.
