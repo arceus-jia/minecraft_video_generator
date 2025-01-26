@@ -8,8 +8,9 @@
 一个将视频搬进 Minecraft 的脚本。亦可以用于制作地图画、动态建筑物等。
 
 ### 效果参考
-![效果 1](https://github.com/user-attachments/assets/70876711-58ec-4d90-a9a9-1ea949773a22)  
-![效果 2](https://github.com/user-attachments/assets/51e89451-bb36-4573-84a6-07e958b9ae9f)
+https://github.com/user-attachments/assets/70876711-58ec-4d90-a9a9-1ea949773a22
+
+https://github.com/user-attachments/assets/51e89451-bb36-4573-84a6-07e958b9ae9f
 
 ---
 

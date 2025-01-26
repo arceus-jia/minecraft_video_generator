@@ -8,8 +8,9 @@
 A script for transferring videos into Minecraft. It can also be used to create map art, dynamic structures, and more.
 
 ### Example Effects
-![Example 1](https://github.com/user-attachments/assets/70876711-58ec-4d90-a9a9-1ea949773a22)  
-![Example 2](https://github.com/user-attachments/assets/51e89451-bb36-4573-84a6-07e958b9ae9f)
+https://github.com/user-attachments/assets/70876711-58ec-4d90-a9a9-1ea949773a22
+
+https://github.com/user-attachments/assets/51e89451-bb36-4573-84a6-07e958b9ae9f
 
 ---
 
