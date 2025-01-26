@@ -4,7 +4,13 @@ mc video generator
 一个将视频搬进minecraft的脚本。 亦可以用于制作地图画，动态建筑物等
 参考效果
 
-## env
+https://github.com/user-attachments/assets/70876711-58ec-4d90-a9a9-1ea949773a22
+
+
+https://github.com/user-attachments/assets/51e89451-bb36-4573-84a6-07e958b9ae9f
+
+
+## 环境
 ```bash
 conda create -n mvg python=3.10
 pip install -r requirements.txt
