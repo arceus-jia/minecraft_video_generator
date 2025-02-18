@@ -7,19 +7,6 @@ import glob
 import numpy as np
 import uuid
 
-parser = argparse.ArgumentParser(description="gen pics")
-
-parser.add_argument("--input", type=str, help="input")
-parser.add_argument("--output", type=str, help="output")
-parser.add_argument("--fps", type=int, default=8, help="fps")
-# parser.add_argument("--max-cnt", type=int, default=24, help="max cnt")
-
-args = parser.parse_args()
-
-input = args.input
-output = args.output
-
-
 def create_hd_video(imgs, filename, fps=24, audio=None):
     h, w, l = imgs[0].shape
     print('lenimags', imgs[0].dtype, imgs[0].shape, len(imgs))
@@ -54,6 +41,19 @@ def create_hd_video(imgs, filename, fps=24, audio=None):
     return filename
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description="gen pics")
+
+    parser.add_argument("--input", type=str, help="input")
+    parser.add_argument("--output", type=str, help="output")
+    parser.add_argument("--fps", type=int, default=8, help="fps")
+    # parser.add_argument("--max-cnt", type=int, default=24, help="max cnt")
+
+    args = parser.parse_args()
+
+    input = args.input
+    output = args.output
+
     imgs = sorted(glob.glob(os.path.join(args.input,'*.jpg')))
     print('imgs...',len(imgs))
     imgs = [cv2.imread(i) for i in imgs]

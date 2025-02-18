@@ -85,22 +85,22 @@ def gen_single_image(input,output,x,y,z,width,height,pix,direction):
 
 
 
-parser = argparse.ArgumentParser(description="gen pics")
-
-parser.add_argument("--input", type=str, help="input")
-parser.add_argument("--output", type=str, help="output")
-parser.add_argument("--width", "-w", type=int, help="w", )
-parser.add_argument("--height", type=int, help="height", default=64)
-parser.add_argument("--x", "-x", type=int, help="x")
-parser.add_argument("--y", "-y", type=int, help="y")
-parser.add_argument("--z", "-z", type=int, help="z")
-parser.add_argument("--pix", "-p", action="store_true", help="pixelate or just resize")
-parser.add_argument("--direction", "-d", type=str, help="direction",default='v')
-
-args = parser.parse_args()
-
-
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="gen pics")
+
+    parser.add_argument("--input", type=str, help="input")
+    parser.add_argument("--output", type=str, help="output")
+    parser.add_argument("--width", "-w", type=int, help="w", )
+    parser.add_argument("--height", type=int, help="height", default=64)
+    parser.add_argument("--x", "-x", type=int, help="x")
+    parser.add_argument("--y", "-y", type=int, help="y")
+    parser.add_argument("--z", "-z", type=int, help="z")
+    parser.add_argument("--pix", "-p", action="store_true", help="pixelate or just resize")
+    parser.add_argument("--direction", "-d", type=str, help="direction",default='v')
+
+    args = parser.parse_args()
+
     # block = get_block([29,123,122])
     # print (block)
     gen_single_image(args.input,args.output,args.x,args.y,args.z,args.width,args.height,args.pix,args.direction)

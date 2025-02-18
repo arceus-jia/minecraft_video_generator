@@ -54,7 +54,7 @@ def preview(result_map):
 
 
 def gen_single_image(
-    input_img, output, x, y, z, width, height, pix, direction, last_map=None
+    input_img, output, x, y, z, width, height, pix, direction, last_map=None,clear_output = None
 ):
     # img = cv2.imread(input_img)
 
@@ -143,39 +143,42 @@ def gen_single_image(
         result_arr.append(cmdstr)
 
     if direction == "v":
-        print(f"fill {sx} {sy} {sz} {sx + w+1} {sy + h+1} {sz} minecraft:air")
+        clear_cmd = f"fill {sx} {sy} {sz} {sx + w+1} {sy + h+1} {sz} minecraft:air"
     elif direction == 'z':
-        print(f"fill {sx} {sy} {sz} {sx} {sy + h+1} {sz + w+1} minecraft:air")
+        clear_cmd = f"fill {sx} {sy} {sz} {sx} {sy + h+1} {sz + w+1} minecraft:air"
     else:
-        print(f"fill {sx} {sy} {sz} {sx + w+1} {sy} {sz+h+1} minecraft:air")
+        clear_cmd = f"fill {sx} {sy} {sz} {sx + w+1} {sy} {sz+h+1} minecraft:air"
+    print(clear_cmd)
+    if clear_output is not None:
+        with open(clear_output, "w") as f:
+            f.writelines([clear_cmd])
 
     with open(output, "w") as f:
         f.writelines(result_arr)
 
     return result_map
 
-
-parser = argparse.ArgumentParser(description="gen pics")
-
-parser.add_argument("--input", type=str, help="input")
-parser.add_argument("--output", type=str, help="output")
-parser.add_argument(
-    "--width",
-    "-w",
-    type=int,
-    help="w",
-)
-parser.add_argument("--height", type=int, help="height", default=64)
-parser.add_argument("--x", "-x", type=int, help="x")
-parser.add_argument("--y", "-y", type=int, help="y")
-parser.add_argument("--z", "-z", type=int, help="z")
-parser.add_argument("--pix", "-p", action="store_true", help="pixelate or just resize")
-parser.add_argument("--direction", "-d", type=str, help="direction", default="v")
-
-args = parser.parse_args()
-
-
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="gen pics")
+
+    parser.add_argument("--input", type=str, help="input")
+    parser.add_argument("--output", type=str, help="output")
+    parser.add_argument(
+        "--width",
+        "-w",
+        type=int,
+        help="w",
+    )
+    parser.add_argument("--height", type=int, help="height", default=64)
+    parser.add_argument("--x", "-x", type=int, help="x")
+    parser.add_argument("--y", "-y", type=int, help="y")
+    parser.add_argument("--z", "-z", type=int, help="z")
+    parser.add_argument("--pix", "-p", action="store_true", help="pixelate or just resize")
+    parser.add_argument("--direction", "-d", type=str, help="direction", default="v")
+
+    args = parser.parse_args()    
+
     # block = get_block([29,123,122])
     # print (block)
     gen_single_image(

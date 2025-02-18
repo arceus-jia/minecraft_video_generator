@@ -126,22 +126,21 @@ def preview(result_map):
     cv2.imwrite("preview.jpg", preview_image)
 
 
-parser = argparse.ArgumentParser(description="gen pics")
-
-parser.add_argument("--input", type=str, help="input")
-parser.add_argument("--output", type=str, help="output")
-parser.add_argument("--width", "-w", type=int, help="w")
-parser.add_argument("--height", type=int, help="h", default=64)
-parser.add_argument("--x", "-x", type=int, help="x")
-parser.add_argument("--y", "-y", type=int, help="y")
-parser.add_argument("--z", "-z", type=int, help="z")
-parser.add_argument("--pix", "-p", action="store_true", help="pixelate or just resize")
-parser.add_argument("--direction", "-d", type=str, help="direction", default="v")
-
-args = parser.parse_args()
-
-
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="gen pics")
+
+    parser.add_argument("--input", type=str, help="input")
+    parser.add_argument("--output", type=str, help="output")
+    parser.add_argument("--width", "-w", type=int, help="w")
+    parser.add_argument("--height", type=int, help="h", default=64)
+    parser.add_argument("--x", "-x", type=int, help="x")
+    parser.add_argument("--y", "-y", type=int, help="y")
+    parser.add_argument("--z", "-z", type=int, help="z")
+    parser.add_argument("--pix", "-p", action="store_true", help="pixelate or just resize")
+    parser.add_argument("--direction", "-d", type=str, help="direction", default="v")
+
+    args = parser.parse_args()    
     # a = np.array([0, 4, 3, 2, 1, 1, 5])
     # nth_element(a, 5, 2, 6)
     # print(a)

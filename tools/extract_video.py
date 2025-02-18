@@ -4,19 +4,6 @@ import subprocess
 from PIL import Image
 import numpy as np
 
-parser = argparse.ArgumentParser(description="gen pics")
-
-parser.add_argument("--input", type=str, help="input")
-parser.add_argument("--output", type=str, help="output")
-parser.add_argument("--skip", type=int, default=0, help="skip")
-parser.add_argument("--max-cnt", type=int, default=24, help="max cnt")
-
-args = parser.parse_args()
-
-input = args.input
-output = args.output
-skip = args.skip
-max_cnt = args.max_cnt
 
 def get_video_rotation(file_path):
     cmd = f"ffprobe -v error -select_streams v:0 -show_entries stream_tags=rotate -of default=noprint_wrappers=1:nokey=1 {file_path}"
@@ -44,6 +31,21 @@ def rotate_image_pil(image, angle):
     return np.array(rotated_image)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="gen pics")
+
+    parser.add_argument("--input", type=str, help="input")
+    parser.add_argument("--output", type=str, help="output")
+    parser.add_argument("--skip", type=int, default=0, help="skip")
+    parser.add_argument("--max-cnt", type=int, default=24, help="max cnt")
+
+    args = parser.parse_args()
+
+    input = args.input
+    output = args.output
+    skip = args.skip
+    max_cnt = args.max_cnt
+
+
     os.makedirs(output, exist_ok=True)
 
     cap = cv2.VideoCapture(input)
