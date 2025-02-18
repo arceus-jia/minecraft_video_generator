@@ -44,9 +44,11 @@ python gen_pic_mcfunction_colormap.py \
 ## 视频转命令
 ```bash
 python gen_video.py \
--x 0 -y -60 -z 0 -d h \
+-x 0 -y -60 -z 0 -d v \
 --input input/pikachu/ \
---output  /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data/test1/functions/
+--output /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data
+-n pikachu
+-t 4
 ```
 
 ---
