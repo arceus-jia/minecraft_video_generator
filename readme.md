@@ -31,14 +31,15 @@ pip install -r requirements.txt
 ## Single Image to Minecraft Commands
 ```bash
 python gen_pic_mcfunction_colormap.py \
--x 0 -y -60 -z 0 -d v \
+-x 0 -y -60 -z 0 -d v --height 64\
 --input input/pikachu/1.png \
---output ~/Library/Application\ Support/minecraft/saves/test001/datapacks/mvg/data/test1/functions/pic1.mcfunction
+--output ~/Library/Application\ Support/minecraft/saves/test001/datapacks/mvg/data/test1/functions/pic1.mcfunction \
 ```
 
 ### Parameter Description
 - `x`, `y`, `z`: Starting coordinates
 - `d`: Direction (`v` for vertical, `h` for horizontal)
+- `--width`, `--height`, : width or heigth (will scale proportionally. Setting one is enough.)
 
 ### Notes
 - For multi-image generation, the version that preprocesses the colormap is the most efficient. For single images, you can also use `gen_pic_mcfunction.py` or `gen_pic_mcfunction_kdtree.py`.
@@ -50,10 +51,10 @@ python gen_pic_mcfunction_colormap.py \
 ## Video to Minecraft Commands
 ```bash
 python gen_video.py \
--x 0 -y -60 -z 0 -d v \
+-x 0 -y -60 -z 0 -d v --height 64 \
 --input input/pikachu/ \
---output /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data
--n pikachu
+--output /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data \
+-n pikachu \
 -t 4
 ```
 
@@ -62,6 +63,7 @@ python gen_video.py \
 - `d`: Direction (`v` for vertical, `h` for horizontal)
 - `n`: Package Name
 - `t`: ticks (1s = 20 ticks)
+- `--width`, `--height`, : width or heigth (will scale proportionally. Setting one is enough.)
 
 ---
 

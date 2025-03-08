@@ -31,7 +31,7 @@ pip install -r requirements.txt
 ## 单图转命令
 ```bash
 python gen_pic_mcfunction_colormap.py \
--x 0 -y -60 -z 0 -d v \
+-x 0 -y -60 -z 0 -d v --height 64 \
 --input input/pikachu/1.png \
 --output ~/Library/Application\ Support/minecraft/saves/test001/datapacks/mvg/data/test1/functions/pic1.mcfunction
 ```
@@ -39,6 +39,7 @@ python gen_pic_mcfunction_colormap.py \
 ### 参数说明
 - `x`, `y`, `z`: 起始坐标
 - `d`: 方向 (`v` 或者 `h`)
+- `--width`, `--height`, : 宽高(会自动缩放，设置一个就够了)
 
 ### 注意
 - 多图生成中，提前处理 colormap 的版本效率最高。对于单图，也可以使用 `gen_pic_mcfunction.py` 或者 `gen_pic_mcfunction_kdtree.py`。
@@ -50,7 +51,7 @@ python gen_pic_mcfunction_colormap.py \
 ## 视频转命令
 ```bash
 python gen_video.py \
--x 0 -y -60 -z 0 -d v \
+-x 0 -y -60 -z 0 -d v --height 64\
 --input input/pikachu/ \
 --output /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data
 -n pikachu
@@ -61,6 +62,7 @@ python gen_video.py \
 - `d`: 方向 (`v` for vertical, `h` for horizontal)
 - `n`: package name
 - `t`: ticks (1s = 20 ticks)
+- `--width`, `--height`, : 宽高(会自动缩放，设置一个就够了)
 
 
 ---
