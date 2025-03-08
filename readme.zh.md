@@ -17,6 +17,12 @@ https://github.com/user-attachments/assets/51e89451-bb36-4573-84a6-07e958b9ae9f
 ## 环境
 ```bash
 conda create -n mvg python=3.10
+conda activate mvg
+pip install -r requirements.txt
+
+#或者
+python3 -m venv mvg
+source ./mvg/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -25,9 +31,9 @@ pip install -r requirements.txt
 ## 单图转命令
 ```bash
 python gen_pic_mcfunction_colormap.py \
--x 0 -y -60 -z 0 -d h \
---input input/1.png \
---output  /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data/test1/functions/pic1.mcfunction
+-x 0 -y -60 -z 0 -d v \
+--input input/pikachu/1.png \
+--output ~/Library/Application\ Support/minecraft/saves/test001/datapacks/mvg/data/test1/functions/pic1.mcfunction
 ```
 
 ### 参数说明
@@ -50,13 +56,26 @@ python gen_video.py \
 -n pikachu
 -t 4
 ```
+### 参数说明
+- `x`, `y`, `z`: 起始坐标
+- `d`: 方向 (`v` for vertical, `h` for horizontal)
+- `n`: package name
+- `t`: ticks (1s = 20 ticks)
+
 
 ---
 
 ## mc 内播放视频
+### 单机
+```mcfunction
+function pikachu:run
+```
+
+### 服务器
 ```bash
 python play.py -f test1 -c 9 -i 0.1
 ```
+
 
 ---
 

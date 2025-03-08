@@ -181,5 +181,6 @@ if __name__ == "__main__":
     else:
         print(f"fill {sx} {sy} {sz} {sx + w+1} {sy} {sz+h+1} minecraft:air")
 
+    os.makedirs(os.path.dirname(args.output),exist_ok=True)
     with open(args.output, "w") as f:
         f.writelines(result_arr)

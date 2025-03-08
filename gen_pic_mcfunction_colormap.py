@@ -58,6 +58,8 @@ def gen_single_image(
 ):
     # img = cv2.imread(input_img)
 
+    os.makedirs(os.path.dirname(output),exist_ok=True)
+
     img = cv2.imread(input_img,cv2.IMREAD_UNCHANGED)
     
     img = resize(img, width, height, pix)

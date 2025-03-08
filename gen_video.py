@@ -85,3 +85,4 @@ if __name__ == "__main__":
 # python gen_video.py -x 0 -y -60 -z 0 --input input/pikachu/ --output /Users/arceus/Library/Application\ Support/minecraft/saves/test001/datapacks/test1/data -n pikachu -d v
 
 # tp 114 4 100
+# schedule clear pikachu:run

@@ -17,6 +17,12 @@ https://github.com/user-attachments/assets/51e89451-bb36-4573-84a6-07e958b9ae9f
 ## Environment Setup
 ```bash
 conda create -n mvg python=3.10
+conda activate mvg
+pip install -r requirements.txt
+
+#or
+python3 -m venv mvg
+source ./mvg/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -25,9 +31,9 @@ pip install -r requirements.txt
 ## Single Image to Minecraft Commands
 ```bash
 python gen_pic_mcfunction_colormap.py \
--x 0 -y -60 -z 0 -d h \
---input input/1.png \
---output /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data/test1/functions/pic1.mcfunction
+-x 0 -y -60 -z 0 -d v \
+--input input/pikachu/1.png \
+--output ~/Library/Application\ Support/minecraft/saves/test001/datapacks/mvg/data/test1/functions/pic1.mcfunction
 ```
 
 ### Parameter Description
@@ -51,9 +57,21 @@ python gen_video.py \
 -t 4
 ```
 
+### Parameter Description
+- `x`, `y`, `z`: Starting coordinates
+- `d`: Direction (`v` for vertical, `h` for horizontal)
+- `n`: Package Name
+- `t`: ticks (1s = 20 ticks)
+
 ---
 
 ## Playing Videos in Minecraft
+### local game (run in mc console)
+```mcfunction
+function pikachu:run
+```
+
+### server 
 ```bash
 python play.py -f test1 -c 9 -i 0.1
 ```
