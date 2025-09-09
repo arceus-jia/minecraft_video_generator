@@ -4,7 +4,9 @@ import numpy as np
 import time
 
 from cfg import blocks, colors
+
 colormap = np.load("colormap.npy")
+
 
 def resize(img, w, h, pixelate=False):
     height, width = img.shape[:2]
@@ -29,7 +31,7 @@ def manhattan(a, b):
 
 def get_block(c):
     if len(c) == 4 and c[3] < 128:
-        return len(blocks) - 1 #最后一位给空气
+        return len(blocks) - 1  # 最后一位给空气
     return colormap[c[0], c[1], c[2]]
 
 
@@ -54,14 +56,24 @@ def preview(result_map):
 
 
 def gen_single_image(
-    input_img, output, x, y, z, width, height, pix, direction, last_map=None,clear_output = None
+    input_img,
+    output,
+    x,
+    y,
+    z,
+    width,
+    height,
+    pix,
+    direction,
+    last_map=None,
+    clear_output=None,
 ):
     # img = cv2.imread(input_img)
 
-    os.makedirs(os.path.dirname(output),exist_ok=True)
+    os.makedirs(os.path.dirname(output), exist_ok=True)
 
-    img = cv2.imread(input_img,cv2.IMREAD_UNCHANGED)
-    
+    img = cv2.imread(input_img, cv2.IMREAD_UNCHANGED)
+
     img = resize(img, width, height, pix)
     cv2.imwrite("resized.jpg", img)
 
@@ -129,10 +141,10 @@ def gen_single_image(
             prev_x, prev_y, prev_z = sx + prev_j, sy + h - prev_i, sz
             if last_i is not None:
                 last_x, last_y, last_z = sx + last_j, sy + h - last_i, sz
-        elif direction == 'z':
-            prev_x, prev_y, prev_z = sx, sy + h - prev_i, sz+prev_j
+        elif direction == "z":
+            prev_x, prev_y, prev_z = sx, sy + h - prev_i, sz + prev_j
             if last_i is not None:
-                last_x, last_y, last_z = sx, sy + h - last_i, sz+last_j       
+                last_x, last_y, last_z = sx, sy + h - last_i, sz + last_j
         else:
             prev_x, prev_y, prev_z = sx + prev_j, sy, sz + prev_i
             if last_i is not None:
@@ -146,7 +158,7 @@ def gen_single_image(
 
     if direction == "v":
         clear_cmd = f"fill {sx} {sy} {sz} {sx + w+1} {sy + h+1} {sz} minecraft:air"
-    elif direction == 'z':
+    elif direction == "z":
         clear_cmd = f"fill {sx} {sy} {sz} {sx} {sy + h+1} {sz + w+1} minecraft:air"
     else:
         clear_cmd = f"fill {sx} {sy} {sz} {sx + w+1} {sy} {sz+h+1} minecraft:air"
@@ -159,6 +171,7 @@ def gen_single_image(
         f.writelines(result_arr)
 
     return result_map
+
 
 if __name__ == "__main__":
 
@@ -176,10 +189,12 @@ if __name__ == "__main__":
     parser.add_argument("--x", "-x", type=int, help="x")
     parser.add_argument("--y", "-y", type=int, help="y")
     parser.add_argument("--z", "-z", type=int, help="z")
-    parser.add_argument("--pix", "-p", action="store_true", help="pixelate or just resize")
+    parser.add_argument(
+        "--pix", "-p", action="store_true", help="pixelate or just resize"
+    )
     parser.add_argument("--direction", "-d", type=str, help="direction", default="v")
 
-    args = parser.parse_args()    
+    args = parser.parse_args()
 
     # block = get_block([29,123,122])
     # print (block)
@@ -195,5 +210,5 @@ if __name__ == "__main__":
         args.direction,
     )
 
-# python gen_pic_mcfunction_colormap.py -x 0 -y -60 -z 0 --input input/1.png --output  /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data/test1/functions/pic1.mcfunction
+# python gen_pic_mcfunction_colormap.py -x 0 -y -60 -z 0 --input input/1.png --output  /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data/test1/function/pic1.mcfunction
 # fill 0 -60 0 97 5 0 minecraft:air

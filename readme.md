@@ -33,7 +33,8 @@ pip install -r requirements.txt
 python gen_pic_mcfunction_colormap.py \
 -x 0 -y -60 -z 0 -d v --height 64\
 --input input/pikachu/1.png \
---output ~/Library/Application\ Support/minecraft/saves/test001/datapacks/mvg/data/test1/functions/pic1.mcfunction \
+--output ~/Library/Application\ Support/minecraft/saves/test001/datapacks/mvg/data/test1/function/pic1.mcfunction \
+##Note that before 1.21, the path was functions instead of function.
 ```
 
 ### Parameter Description

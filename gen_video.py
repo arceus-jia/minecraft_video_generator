@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    output_dir = os.path.join(args.output, args.datapack_name, "functions")
+    output_dir = os.path.join(args.output, args.datapack_name, "function")
     os.makedirs(output_dir, exist_ok=True)
     images = sorted(
         glob.glob(os.path.join(args.input, "*.jpg"))
