@@ -2,6 +2,7 @@ import os, sys, cv2
 import argparse
 import numpy as np
 import time
+import math
 
 from cfg import blocks, colors
 
@@ -10,10 +11,10 @@ colormap = np.load("colormap.npy")
 
 def resize(img, w, h, pixelate=False):
     height, width = img.shape[:2]
-    if w:
+    if w and h is None:
         r = w / width
         h = round(height * r)
-    if h:
+    elif h and w is None:
         r = h / height
         w = round(width * r)
 
@@ -54,6 +55,81 @@ def preview(result_map):
     preview_image = colors[result_map].astype(np.uint8)
     cv2.imwrite("preview.jpg", preview_image)
 
+def make_clear_commands(direction: str, sx: int, sy: int, sz: int, w: int, h: int, max_blocks: int = 32768) -> list:
+    """
+    Generate chunked clear commands for the rendered rectangle, depending on direction:
+      - direction 'v': plane X×Y at fixed Z (thickness 1)
+      - direction 'z': plane Z×Y at fixed X (thickness 1)
+      - otherwise   : plane X×Z at fixed Y (thickness 1)
+    """
+    w = int(w); h = int(h)
+    if w <= 0 or h <= 0:
+        return []
+    # 2D area with thickness 1
+    max_area = max(1, max_blocks)  # thickness is 1 block
+    base = max(1, int(math.isqrt(max_area)))
+    tile_w = min(w, base)
+    tile_h = min(h, max(1, max_area // tile_w))
+    cmds = []
+    for xi in range(0, w, tile_w):
+        cur_w = min(tile_w, w - xi)
+        cur_tile_h = min(tile_h, max(1, max_area // cur_w))
+        for zi in range(0, h, cur_tile_h):
+            cur_h = min(cur_tile_h, h - zi)
+            if direction == "v":
+                x0, x1 = sx + xi, sx + xi + cur_w - 1
+                y0, y1 = sy + zi, sy + zi + cur_h - 1
+                z0 = z1 = sz
+            elif direction == "z":
+                x0 = x1 = sx
+                y0, y1 = sy + zi, sy + zi + cur_h - 1
+                z0, z1 = sz + xi, sz + xi + cur_w - 1
+            else:
+                x0, x1 = sx + xi, sx + xi + cur_w - 1
+                y0 = y1 = sy
+                z0, z1 = sz + zi, sz + zi + cur_h - 1
+            cmds.append(f"fill {x0} {y0} {z0} {x1} {y1} {z1} minecraft:air")
+    return cmds
+
+
+def write_clear(direction: str, output_path: str, sx: int, sy: int, sz: int, w: int, h: int, max_blocks: int = 32768):
+    cmds = make_clear_commands(direction, sx, sy, sz, w, h, max_blocks)
+    if output_path:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        with open(output_path, "w") as f:
+            f.write("\n".join(cmds))
+    for c in cmds:
+        print(c)
+
+
+# 4x4 Bayer matrix for ordered dithering (values 0..15)
+BAYER4 = np.array([
+    [0, 8, 2, 10],
+    [12, 4, 14, 6],
+    [3, 11, 1, 9],
+    [15, 7, 13, 5],
+], dtype=np.float32)
+
+
+def apply_ordered4_dither(img: np.ndarray, amount: float) -> np.ndarray:
+    """Apply 4x4 ordered dithering on BGR(A) image. Alpha channel preserved.
+    amount is roughly in 0..16 typical range.
+    """
+    if img.ndim != 3 or img.shape[2] < 3:
+        return img
+    h, w = img.shape[:2]
+    # Build tiled threshold map in range [-0.5, 0.5)
+    t = BAYER4 / 16.0 - 0.5
+    tile = np.tile(t, (int(np.ceil(h / 4)), int(np.ceil(w / 4))))[:h, :w]
+    off = (amount * tile).astype(np.float32)
+
+    out = img.copy().astype(np.float32)
+    # Add to B,G,R channels only
+    out[:, :, 0] = np.clip(np.rint(out[:, :, 0] + off), 0, 255)
+    out[:, :, 1] = np.clip(np.rint(out[:, :, 1] + off), 0, 255)
+    out[:, :, 2] = np.clip(np.rint(out[:, :, 2] + off), 0, 255)
+    return out.astype(np.uint8)
+
 
 def gen_single_image(
     input_img,
@@ -67,6 +143,8 @@ def gen_single_image(
     direction,
     last_map=None,
     clear_output=None,
+    dither: str = "none",
+    dither_amount: float = 12.0,
 ):
     # img = cv2.imread(input_img)
 
@@ -77,7 +155,22 @@ def gen_single_image(
     img = resize(img, width, height, pix)
     cv2.imwrite("resized.jpg", img)
 
+    # Apply ordered dithering if requested (before lookup)
+    if dither == "ordered4":
+        img = apply_ordered4_dither(img, float(dither_amount))
+
     st = time.time()
+    # Lazy-load default colormap if not preset by caller (prefer OKLab)
+    if 'colormap' not in globals():
+        try:
+            globals()['colormap'] = np.load('colormap_oklab.npy')
+            print('loaded colormap_oklab.npy (default)')
+        except Exception:
+            try:
+                globals()['colormap'] = np.load('colormap.npy')
+                print('loaded colormap.npy (fallback)')
+            except Exception as e:
+                raise RuntimeError(f'No colormap loaded and failed to load defaults: {e}')
     result_map = np.apply_along_axis(get_block, 2, img)
 
     visible_map = None
@@ -85,7 +178,7 @@ def gen_single_image(
         visible_map = np.where(result_map == last_map, False, True)
 
     print("cost==", time.time() - st)
-    # preview(result_map)
+    preview(result_map)
 
     sx = x
     sy = y
@@ -156,16 +249,9 @@ def gen_single_image(
 
         result_arr.append(cmdstr)
 
-    if direction == "v":
-        clear_cmd = f"fill {sx} {sy} {sz} {sx + w+1} {sy + h+1} {sz} minecraft:air"
-    elif direction == "z":
-        clear_cmd = f"fill {sx} {sy} {sz} {sx} {sy + h+1} {sz + w+1} minecraft:air"
-    else:
-        clear_cmd = f"fill {sx} {sy} {sz} {sx + w+1} {sy} {sz+h+1} minecraft:air"
-    print(clear_cmd)
+    # 分段 clear（避免单条 fill 过大）
     if clear_output is not None:
-        with open(clear_output, "w") as f:
-            f.writelines([clear_cmd])
+        write_clear(direction, clear_output, sx, sy, sz, w, h, 32768)
 
     with open(output, "w") as f:
         f.writelines(result_arr)
@@ -178,7 +264,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="gen pics")
 
     parser.add_argument("--input", type=str, help="input")
-    parser.add_argument("--output", type=str, help="output")
+    parser.add_argument("--output", type=str, help="output (file or datapack data/ when -n is used)")
     parser.add_argument(
         "--width",
         "-w",
@@ -193,22 +279,70 @@ if __name__ == "__main__":
         "--pix", "-p", action="store_true", help="pixelate or just resize"
     )
     parser.add_argument("--direction", "-d", type=str, help="direction", default="v")
+    parser.add_argument("--mode", type=str, choices=["rgb", "lab", "lab2000","oklab"], default="oklab", help="colormap mode: rgb=colormap.npy, lab=colormap_lab.npy, lab2000=colormap_lab2000.npy")
+    parser.add_argument("--namespace", "-n", type=str, default=None, help="datapack namespace; when set, write run.mcfunction and clear.mcfunction under <output>/<ns>/function/")
+    parser.add_argument("--dither", type=str, choices=["none", "ordered4"], default="ordered4", help="dithering: none or ordered4 (Bayer 4x4)")
+    parser.add_argument("--dither-amount", type=float, default=12.0, help="dither strength for ordered4 (typical 8-16)")
+    parser.add_argument("--clear-output", type=str, default=None, help="single-file mode: optional path to write clear mcfunction")
 
     args = parser.parse_args()
 
+    # Load colormap by mode
+    try:
+        colormap_path = {
+            "rgb": "colormap.npy",
+            "lab": "colormap_lab.npy",
+            "lab2000": "colormap_lab2000.npy",
+            "oklab": "colormap_oklab.npy",
+        }[args.mode]
+        globals()["colormap"] = np.load(colormap_path)
+        print(f"loaded {colormap_path}")
+    except Exception as e:
+        raise RuntimeError(f"Failed to load colormap file for mode={args.mode}: {e}")
+
     # block = get_block([29,123,122])
     # print (block)
-    gen_single_image(
-        args.input,
-        args.output,
-        args.x,
-        args.y,
-        args.z,
-        args.width,
-        args.height,
-        args.pix,
-        args.direction,
-    )
+    ns = args.namespace
+    if ns is None:
+        # 单文件模式
+        gen_single_image(
+            args.input,
+            args.output,
+            args.x,
+            args.y,
+            args.z,
+            args.width,
+            args.height,
+            args.pix,
+            args.direction,
+            clear_output=args.clear_output,
+            dither=args.dither,
+            dither_amount=args.dither_amount,
+        )
+    else:
+        # 数据包模式：写入 <data>/<ns>/function/run.mcfunction 和 clear.mcfunction
+        func_dir = os.path.join(args.output, ns, "function")
+        os.makedirs(func_dir, exist_ok=True)
+        run_path = os.path.join(func_dir, "run.mcfunction")
+        clear_path = os.path.join(func_dir, "clear.mcfunction")
+        gen_single_image(
+            args.input,
+            run_path,
+            args.x,
+            args.y,
+            args.z,
+            args.width,
+            args.height,
+            args.pix,
+            args.direction,
+            clear_output=clear_path,
+            dither=args.dither,
+            dither_amount=args.dither_amount,
+        )
+        print(f"wrote run.mcfunction: {run_path}")
+        print(f"wrote clear.mcfunction: {clear_path}")
 
 # python gen_pic_mcfunction_colormap.py -x 0 -y -60 -z 0 --input input/1.png --output  /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data/test1/function/pic1.mcfunction
 # fill 0 -60 0 97 5 0 minecraft:air
+# python gen_pic_mcfunction_colormap.py --output ~/Desktop/mc/paper_1121/world/datapacks/test2/data/ -n asuna -x 0 -y -60 -z 0 --width 256 --input input/asuna.jpg -d h --height 384
+# mapref set 0,1,2,3,4,5 world 0 -60 0 255 -60 383 2 3 2 999

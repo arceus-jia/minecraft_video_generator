@@ -29,8 +29,14 @@ if __name__ == "__main__":
     )
     parser.add_argument("--direction", "-d", type=str, help="direction", default="v")
     parser.add_argument("--ticks", "-t", type=int, help="ticks", default=4)
+    # colormap/dither options (defaults: OKLab + ordered4)
+    parser.add_argument("--mode", type=str, choices=["rgb", "lab", "lab2000", "oklab"], default="oklab")
+    parser.add_argument("--dither", type=str, choices=["none", "ordered4"], default="ordered4")
+    parser.add_argument("--dither-amount", type=float, default=12.0)
 
     args = parser.parse_args()
+
+    # colormap is loaded lazily inside gen_single_image() if missing; default to OKLab
 
     output_dir = os.path.join(args.output, args.datapack_name, "function")
     os.makedirs(output_dir, exist_ok=True)
@@ -69,6 +75,8 @@ if __name__ == "__main__":
             args.direction,
             last_map,
             clear_output,
+            dither=args.dither,
+            dither_amount=args.dither_amount,
         )
 
     run_cmd_arr.append(
@@ -83,6 +91,8 @@ if __name__ == "__main__":
 # python gen_video.py -x 0 -y -60 -z 0 --input input/pikachu/ --output  /Users/arceus/Desktop/mc/paper_1120/world/datapacks/test1/data/ -n pikachu -d h
 
 # python gen_video.py -x 0 -y -60 -z 0 --input input/pikachu/ --output /Users/arceus/Library/Application\ Support/minecraft/saves/test001/datapacks/test1/data -n pikachu -d v
+
+# python gen_video.py -x 0 -y -60 -z 0 --input output/mickey/ --output ~/Desktop/mc/paper_1121/world/datapacks/test2/data/ -n cat -d h  --width 256 --height 256
 
 # tp 114 4 100
 # schedule clear pikachu:run
