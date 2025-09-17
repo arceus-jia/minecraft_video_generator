@@ -42,9 +42,11 @@ public class SimpleMapRefresher extends JavaPlugin {
             case "set": {
                 // 支持两种：
                 // 1) 单地图：
-                //    /mapref set <mapId> <world> <x1> <y1> <z1> [<x2> <y2> <z2>] [intervalTicks] [playerRadius]
+                // /mapref set <mapId> <world> <x1> <y1> <z1> [<x2> <y2> <z2>] [intervalTicks]
+                // [playerRadius]
                 // 2) 多地图平铺：
-                //    /mapref set <mapId1,mapId2,...> <world> <x1> <y> <z1> <x2> <y> <z2> <cols> <rows> [intervalTicks] [playerRadius]
+                // /mapref set <mapId1,mapId2,...> <world> <x1> <y> <z1> <x2> <y> <z2> <cols>
+                // <rows> [intervalTicks] [playerRadius]
                 try {
                     if (a[1].contains(",")) {
                         // 平铺多地图
@@ -281,30 +283,47 @@ public class SimpleMapRefresher extends JavaPlugin {
         private void ensureGlobalTask() {
             if (globalTaskId != -1)
                 return;
-            // 初始延迟 1t，周期 1t；统一步进并在合适的 tick 才发送
+
             globalTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                 TICK++;
-                
-                // 按 mapId 顺序处理，确保一致性
+
+                // ===== 阶段A：采样（安排下一 tick 发送）=====
                 for (Map.Entry<Integer, Binding> entry : all.entrySet()) {
                     Binding b = entry.getValue();
                     if (b.world == null || b.view == null || b.renderer == null)
                         continue;
-                    // 仅在其 interval 的 tick 边界检查/发送
+
+                    // 只有在 interval 边界才采样
                     if (b.interval > 1 && (TICK % b.interval) != 0)
                         continue;
-                    
-                    // 采样并检查变化
-                    if (!b.renderer.flushDirtyAndHasChanges())
+
+                    // 采样：若有变化，标记下一 tick 发送
+                    boolean changed = b.renderer.sampleWorldIntoDesired();
+                    if (changed) {
+                        b.hasPendingFrame = true;
+                        b.scheduledSendTick = TICK + 1; // 延迟 1 tick 再发
+                    }
+                }
+
+                // ===== 阶段B：发送（仅发送上一 tick 采到的帧）=====
+                for (Map.Entry<Integer, Binding> entry : all.entrySet()) {
+                    Binding b = entry.getValue();
+                    if (!b.hasPendingFrame)
                         continue;
-                    
-                    // 发送给范围内的玩家
+                    if (b.scheduledSendTick != TICK)
+                        continue; // 还没到发送时刻
+
+                    // 发送给范围内玩家
                     for (Player p : Bukkit.getOnlinePlayers()) {
                         if (p.getWorld() != b.world)
                             continue;
-                        if (b.renderer.playerInRange(p))
+                        if (b.renderer.playerInRange(p)) {
                             p.sendMap(b.view);
+                        }
                     }
+                    // 本帧发送完成，清理标记
+                    b.hasPendingFrame = false;
+                    b.scheduledSendTick = -1L;
                 }
             }, 1L, 1L);
         }
@@ -322,6 +341,10 @@ public class SimpleMapRefresher extends JavaPlugin {
         final World world;
         final MapView view;
         final RegionRenderer renderer;
+
+        // 新增：延迟发送的调度
+        long scheduledSendTick = -1L; // 何时发送（= 采样 tick + 1）
+        boolean hasPendingFrame = false; // 是否有待发送帧
 
         Binding(int mapId, World w, MapView v, RegionRenderer r, int interval, int radius) {
             this.mapId = mapId;
@@ -376,7 +399,7 @@ public class SimpleMapRefresher extends JavaPlugin {
             // 因为 render() 可能被 Bukkit 以不同频率调用
             if (!pending)
                 return;
-            
+
             // 应用所有变化
             int idx = 0;
             boolean hasChanges = false;
@@ -391,7 +414,7 @@ public class SimpleMapRefresher extends JavaPlugin {
                     idx++;
                 }
             }
-            
+
             // 只有真正有变化时才清除 pending
             if (hasChanges) {
                 pending = false;
@@ -402,7 +425,7 @@ public class SimpleMapRefresher extends JavaPlugin {
         boolean sampleWorldIntoDesired() {
             return sampleWorldIntoDesired(false);
         }
-        
+
         // 支持使用快照模式的采样方法
         boolean sampleWorldIntoDesired(boolean useSnapshot) {
             boolean changed = false;
