@@ -4,4 +4,4 @@ __pycache__/
 .vscode
 output/
 input/
-target/
+simple-map-refresher/target/

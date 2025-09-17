@@ -1,0 +1,19 @@
+name: SimpleMapRefresher
+main: me.example.simplemaprefresher.SimpleMapRefresher
+version: 1.2.0
+api-version: '1.21'
+load: POSTWORLD
+
+commands:
+  mapref:
+    description: Bind world regions to map ids and live-refresh them (multi-binding).
+    usage: |
+      /mapref set <mapId> <world> <x1> <y1> <z1> [<x2> <y2> <z2>] [intervalTicks] [playerRadius]
+      /mapref remove <mapId>
+      /mapref list
+      /mapref stop
+    permission: mapref.use
+
+permissions:
+  mapref.use:
+    default: op
