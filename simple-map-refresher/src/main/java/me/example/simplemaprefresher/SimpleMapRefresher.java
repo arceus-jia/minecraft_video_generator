@@ -287,33 +287,38 @@ public class SimpleMapRefresher extends JavaPlugin {
             globalTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
                 TICK++;
 
-                // ===== 阶段A：采样（安排下一 tick 发送）=====
+                boolean anyChanged = false;
+
+                // ===== 阶段A：采样（仍按各自 interval 节流）=====
                 for (Map.Entry<Integer, Binding> entry : all.entrySet()) {
                     Binding b = entry.getValue();
                     if (b.world == null || b.view == null || b.renderer == null)
                         continue;
 
-                    // 只有在 interval 边界才采样
                     if (b.interval > 1 && (TICK % b.interval) != 0)
                         continue;
 
-                    // 采样：若有变化，标记下一 tick 发送
-                    boolean changed = b.renderer.sampleWorldIntoDesired();
-                    if (changed) {
-                        b.hasPendingFrame = true;
-                        b.scheduledSendTick = TICK + 1; // 延迟 1 tick 再发
+                    if (b.renderer.sampleWorldIntoDesired()) {
+                        anyChanged = true;
                     }
                 }
 
-                // ===== 阶段B：发送（仅发送上一 tick 采到的帧）=====
+                // 关键点：只要有任意一张有变化，安排“下一 tick 广播发送给所有绑定”
+                if (anyChanged) {
+                    for (Binding b : all.values()) {
+                        b.hasPendingFrame = true;
+                        b.scheduledSendTick = TICK + 1; // 统一延迟 1 tick
+                    }
+                }
+
+                // ===== 阶段B：到点则对所有“已安排”的地图发送 =====
                 for (Map.Entry<Integer, Binding> entry : all.entrySet()) {
                     Binding b = entry.getValue();
                     if (!b.hasPendingFrame)
                         continue;
                     if (b.scheduledSendTick != TICK)
-                        continue; // 还没到发送时刻
+                        continue; // 只在下一 tick 发
 
-                    // 发送给范围内玩家
                     for (Player p : Bukkit.getOnlinePlayers()) {
                         if (p.getWorld() != b.world)
                             continue;
@@ -321,7 +326,6 @@ public class SimpleMapRefresher extends JavaPlugin {
                             p.sendMap(b.view);
                         }
                     }
-                    // 本帧发送完成，清理标记
                     b.hasPendingFrame = false;
                     b.scheduledSendTick = -1L;
                 }
