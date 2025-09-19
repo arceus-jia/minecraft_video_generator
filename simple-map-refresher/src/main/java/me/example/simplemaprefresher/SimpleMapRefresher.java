@@ -7,7 +7,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.map.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.util.*;
+
+import java.io.*;
+import java.awt.Color;
+import java.lang.reflect.Field;
 
 public class SimpleMapRefresher extends JavaPlugin {
 
@@ -40,115 +47,113 @@ public class SimpleMapRefresher extends JavaPlugin {
 
         switch (a[0].toLowerCase(Locale.ROOT)) {
             case "set": {
-                // 支持两种：
-                // 1) 单地图：
-                // /mapref set <mapId> <world> <x1> <y1> <z1> [<x2> <y2> <z2>] [intervalTicks]
-                // [playerRadius]
-                // 2) 多地图平铺：
-                // /mapref set <mapId1,mapId2,...> <world> <x1> <y> <z1> <x2> <y> <z2> <cols>
-                // <rows> [intervalTicks] [playerRadius]
                 try {
-                    if (a[1].contains(",")) {
-                        // 平铺多地图
-                        if (a.length != 11 && a.length != 13) {
-                            help(sender);
-                            return true;
-                        }
-                        String[] idStrs = a[1].split(",");
-                        int[] ids = new int[idStrs.length];
-                        for (int i = 0; i < idStrs.length; i++)
-                            ids[i] = Integer.parseInt(idStrs[i].trim());
-
-                        String worldName = a[2];
-                        int x1 = Integer.parseInt(a[3]);
-                        int y1 = Integer.parseInt(a[4]);
-                        int z1 = Integer.parseInt(a[5]);
-                        int x2 = Integer.parseInt(a[6]);
-                        /* int y2 = */ Integer.parseInt(a[7]); // y 固定，用 y1
-                        int z2 = Integer.parseInt(a[8]);
-                        int cols = Integer.parseInt(a[9]);
-                        int rows = Integer.parseInt(a[10]);
-                        int interval = (a.length == 13) ? Integer.parseInt(a[11]) : 2;
-                        int radius = (a.length == 13) ? Integer.parseInt(a[12]) : 64;
-
-                        if (cols <= 0 || rows <= 0) {
-                            sender.sendMessage(c("&ccols/rows 必须 > 0"));
-                            return true;
-                        }
-                        int total = cols * rows;
-                        if (ids.length != total) {
-                            sender.sendMessage(c("&cmapId 数量与 cols*rows 不一致：" + ids.length + " != " + total));
-                            return true;
-                        }
-
-                        int xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
-                        int zMin = Math.min(z1, z2), zMax = Math.max(z1, z2);
-                        int w = xMax - xMin + 1, h = zMax - zMin + 1;
-
-                        // 使用等分（向下取整分割，尾块补齐），行优先：自上而下（z），行内左到右（x）
-                        int idx = 0;
-                        for (int r = 0; r < rows; r++) {
-                            int zStartOff = (int) Math.floor((long) r * h / (double) rows);
-                            int zEndOff = (int) Math.floor((long) (r + 1) * h / (double) rows) - 1;
-                            int z1t = zMin + zStartOff;
-                            int z2t = zMin + zEndOff;
-                            for (int ccol = 0; ccol < cols; ccol++) {
-                                int xStartOff = (int) Math.floor((long) ccol * w / (double) cols);
-                                int xEndOff = (int) Math.floor((long) (ccol + 1) * w / (double) cols) - 1;
-                                int x1t = xMin + xStartOff;
-                                int x2t = xMin + xEndOff;
-
-                                int mapId = ids[idx++];
-                                boolean ok = binds.addOrReplace(mapId, worldName, x1t, y1, z1t, x2t, y1, z2t,
-                                        interval, radius);
-                                if (!ok) {
-                                    sender.sendMessage(c("&c绑定失败 map#" + mapId + "：检查 world 是否存在、map 是否已展开。"));
-                                    return true;
-                                }
-                            }
-                        }
-                        sender.sendMessage(c("&a已批量绑定 " + ids.length + " 张地图，布局=" + cols + "×" + rows));
-                        return true;
-                    } else {
-                        // 单地图原逻辑
-                        if (a.length != 6 && a.length != 9 && a.length != 11) {
-                            help(sender);
-                            return true;
-                        }
-
-                        int mapId = Integer.parseInt(a[1]);
-                        String worldName = a[2];
-                        int x1 = Integer.parseInt(a[3]);
-                        int y1 = Integer.parseInt(a[4]);
-                        int z1 = Integer.parseInt(a[5]);
-
-                        Integer x2 = null, y2 = null, z2 = null;
-                        Integer interval = null, radius = null;
-
-                        if (a.length >= 9) {
-                            x2 = Integer.parseInt(a[6]);
-                            y2 = Integer.parseInt(a[7]);
-                            z2 = Integer.parseInt(a[8]);
-                        }
-                        if (a.length == 11) {
-                            interval = Integer.parseInt(a[9]);
-                            radius = Integer.parseInt(a[10]);
-                        }
-
-                        boolean ok = binds.addOrReplace(mapId, worldName, x1, y1, z1, x2, y2, z2,
-                                interval != null ? interval : 2, radius != null ? radius : 64);
-                        if (!ok)
-                            sender.sendMessage(c("&c绑定失败：检查 world 是否存在、mapId 是否已展开。"));
-                        else
-                            sender.sendMessage(c("&a已绑定 &fmap#" + mapId + "&a：&7" +
-                                    binds.infoOf(mapId)));
+                    // 必填：ids, world, x1, y, z1
+                    if (a.length < 6) {
+                        help(sender);
                         return true;
                     }
+
+                    String[] idStrs = a[1].split(",");
+                    int[] ids = new int[idStrs.length];
+                    for (int i = 0; i < idStrs.length; i++)
+                        ids[i] = Integer.parseInt(idStrs[i].trim());
+
+                    String worldName = a[2];
+                    int x1 = Integer.parseInt(a[3]);
+                    int y = Integer.parseInt(a[4]);
+                    int z1 = Integer.parseInt(a[5]);
+
+                    int iArg = 6;
+
+                    // 可选：x2, y(忽略), z2
+                    Integer x2 = null, z2 = null;
+                    if (a.length - iArg >= 3) {
+                        x2 = Integer.parseInt(a[iArg]);
+                        iArg++;
+                        /* int y2 = */ /* 忽略 */ iArg++;
+                        z2 = Integer.parseInt(a[iArg]);
+                        iArg++;
+                    }
+
+                    // 可选：cols, rows
+                    int cols = 1, rows = 1;
+                    if (a.length - iArg >= 2) {
+                        cols = Integer.parseInt(a[iArg++]);
+                        rows = Integer.parseInt(a[iArg++]);
+                    }
+
+                    // 可选：interval, radius
+                    int interval = 2, radius = 64;
+                    if (a.length - iArg >= 2) {
+                        interval = Integer.parseInt(a[iArg++]);
+                        radius = Integer.parseInt(a[iArg++]);
+                    }
+
+                    // 如果还有多余参数，判定为用法错误
+                    if (iArg != a.length) {
+                        help(sender);
+                        return true;
+                    }
+
+                    // 默认 128×128（当 x2/z2 省略）
+                    if (x2 == null)
+                        x2 = x1 + 127;
+                    if (z2 == null)
+                        z2 = z1 + 127;
+
+                    // 基本校验
+                    if (cols <= 0 || rows <= 0) {
+                        sender.sendMessage(c("&ccols/rows 必须 > 0"));
+                        return true;
+                    }
+                    int total = cols * rows;
+                    if (ids.length != total) {
+                        sender.sendMessage(c("&cmapId 数量与 cols*rows 不一致：" + ids.length + " != " + total));
+                        return true;
+                    }
+
+                    // 计算铺图分块
+                    int xMin = Math.min(x1, x2), xMax = Math.max(x1, x2);
+                    int zMin = Math.min(z1, z2), zMax = Math.max(z1, z2);
+                    int w = xMax - xMin + 1, h = zMax - zMin + 1;
+
+                    int idx = 0;
+                    // 创建组
+                    BindManager.TileGroup g = binds.createGroup(worldName, interval);
+
+                    for (int r = 0; r < rows; r++) {
+                        int zStartOff = (int) Math.floor((long) r * h / (double) rows);
+                        int zEndOff = (int) Math.floor((long) (r + 1) * h / (double) rows) - 1;
+                        int z1t = zMin + zStartOff;
+                        int z2t = zMin + zEndOff;
+                        for (int ccol = 0; ccol < cols; ccol++) {
+                            int xStartOff = (int) Math.floor((long) ccol * w / (double) cols);
+                            int xEndOff = (int) Math.floor((long) (ccol + 1) * w / (double) cols) - 1;
+                            int x1t = xMin + xStartOff;
+                            int x2t = xMin + xEndOff;
+
+                            int mapId = ids[idx++];
+                            Binding b = binds.addOrReplaceGetBinding(mapId, worldName, x1t, y, z1t, x2t, y, z2t,
+                                    interval, radius);
+                            if (b == null) {
+                                sender.sendMessage(c("&c绑定失败 map#" + mapId + "：检查 world 是否存在、map 是否已展开。"));
+                                return true;
+                            }
+                            binds.putIntoGroup(mapId, b, g);
+                        }
+                    }
+                    sender.sendMessage(c("&a已绑定 " + ids.length + " 张地图，布局=" + cols + "×" + rows +
+                            "，区域=(" + xMin + "," + y + "," + zMin + ")~(" + xMax + "," + y + "," + zMax + ") " +
+                            " interval=" + interval + " radius=" + radius));
+                    return true;
+
                 } catch (NumberFormatException e) {
                     sender.sendMessage(c("&c参数必须是整数。"));
                     return true;
                 }
             }
+
             case "remove": {
                 if (a.length != 2) {
                     sender.sendMessage(c("&e用法: /mapref remove <mapId>"));
@@ -179,6 +184,31 @@ public class SimpleMapRefresher extends JavaPlugin {
                 sender.sendMessage(c("&a已停止所有绑定。"));
                 return true;
             }
+            case "dump": {
+                String filename = (a.length >= 2) ? a[1] : "palette.csv";
+                File outFile = new File(getDataFolder(), filename);
+                try {
+                    outFile.getParentFile().mkdirs();
+
+                    Field f = MapPalette.class.getDeclaredField("colors");
+                    f.setAccessible(true);
+                    Color[] colors = (Color[]) f.get(null);
+
+                    try (PrintWriter pw = new PrintWriter(new FileWriter(outFile))) {
+                        for (int i = 0; i < colors.length; i++) {
+                            Color c = colors[i];
+                            pw.printf("%d,%d,%d,%d%n", i, c.getRed(), c.getGreen(), c.getBlue());
+                        }
+                    }
+
+                    sender.sendMessage(c("&a调色板已导出到: &f" + outFile.getAbsolutePath()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sender.sendMessage(c("&c导出失败: " + e.getMessage()));
+                }
+                return true;
+            }
+
             default:
                 help(sender);
                 return true;
@@ -186,14 +216,14 @@ public class SimpleMapRefresher extends JavaPlugin {
     }
 
     private void help(CommandSender s) {
-        s.sendMessage(c("&e用法:"));
+        s.sendMessage(c("&e用法(统一)："));
         s.sendMessage(
-                c("&f/mapref set <mapId> <world> <x1> <y1> <z1> [<x2> <y2> <z2>] [intervalTicks] [playerRadius]"));
-        s.sendMessage(
-                c("&7（多地图平铺）&f/mapref set <id1,id2,...> <world> <x1> <y> <z1> <x2> <y> <z2> <cols> <rows> [interval] [radius]"));
+                c("&f/mapref set <id[,id2,...]> <world> <x1> <y> <z1> [<x2> <y> <z2>] [cols rows] [interval radius]"));
+        s.sendMessage(c("&7默认: x2=x1+127, z2=z1+127, cols=1, rows=1, interval=2, radius=64"));
         s.sendMessage(c("&f/mapref remove <mapId>"));
         s.sendMessage(c("&f/mapref list"));
         s.sendMessage(c("&f/mapref stop"));
+        s.sendMessage(c("&f/mapref dump"));
     }
 
     private static String c(String s) {
@@ -207,6 +237,21 @@ public class SimpleMapRefresher extends JavaPlugin {
         private final Map<Integer, Binding> all = new TreeMap<>();
         // 全局单任务调度，1t 执行一次，统一对齐发送
         private int globalTaskId = -1;
+
+        // 轻量分组：每张地图归属的组，以及所有组列表
+        private final Map<Integer, TileGroup> groupOfMap = new HashMap<>();
+        private final List<TileGroup> groups = new ArrayList<>();
+
+        static class TileGroup {
+            final String worldName;
+            final List<Binding> members = new ArrayList<>();
+            int interval; // 组内统一 interval（按 /set 传入值）
+
+            TileGroup(String worldName, int interval) {
+                this.worldName = worldName;
+                this.interval = Math.max(1, interval);
+            }
+        }
 
         BindManager(JavaPlugin p) {
             this.plugin = p;
@@ -241,13 +286,52 @@ public class SimpleMapRefresher extends JavaPlugin {
             return true;
         }
 
+        Binding addOrReplaceGetBinding(int mapId, String worldName,
+                int x1, int y1, int z1, Integer x2, Integer y2, Integer z2,
+                int interval, int radius) {
+            World world = Bukkit.getWorld(worldName);
+            if (world == null)
+                return null;
+            MapView view = Bukkit.getMap(mapId);
+            if (view == null)
+                return null;
+
+            // 如果已存在，先清理
+            remove(mapId);
+
+            RegionRenderer renderer = new RegionRenderer(world, x1, y1, z1, x2, y2, z2, radius);
+            // 配置 MapView
+            view.setScale(MapView.Scale.NORMAL);
+            view.setTrackingPosition(false);
+            view.setUnlimitedTracking(false);
+            for (MapRenderer r : new ArrayList<>(view.getRenderers()))
+                view.removeRenderer(r);
+            view.addRenderer(renderer);
+
+            Binding b = new Binding(mapId, world, view, renderer, Math.max(1, interval), Math.max(1, radius));
+            all.put(mapId, b);
+
+            ensureGlobalTask();
+            return b;
+        }
+
         boolean remove(int mapId) {
             Binding b = all.remove(mapId);
             if (b == null)
                 return false;
+
             if (b.view != null && b.renderer != null)
                 b.view.removeRenderer(b.renderer);
-            // 若已无绑定，关闭全局任务
+
+            // 从组里移除
+            TileGroup g = groupOfMap.remove(mapId);
+            if (g != null) {
+                g.members.remove(b);
+                if (g.members.isEmpty()) {
+                    groups.remove(g);
+                }
+            }
+
             if (all.isEmpty())
                 cancelGlobalTask();
             return true;
@@ -260,6 +344,9 @@ public class SimpleMapRefresher extends JavaPlugin {
             }
             all.clear();
             cancelGlobalTask();
+            groupOfMap.clear();
+            groups.clear();
+
         }
 
         List<String> listAll() {
@@ -278,6 +365,22 @@ public class SimpleMapRefresher extends JavaPlugin {
             return "map#" + b.mapId + " world=" + b.world.getName() + " interval=" + b.interval + "tick radius="
                     + b.radius +
                     " region=" + b.renderer.regionString();
+        }
+
+        private TileGroup createGroup(String worldName, int interval) {
+            TileGroup g = new TileGroup(worldName, Math.max(1, interval));
+            groups.add(g);
+            return g;
+        }
+
+        private void putIntoGroup(int mapId, Binding b, TileGroup g) {
+            // 防御：如果这个 mapId 曾经在别的组，先移除旧映射
+            TileGroup old = groupOfMap.remove(mapId);
+            if (old != null)
+                old.members.remove(b);
+
+            groupOfMap.put(mapId, g);
+            g.members.add(b);
         }
 
         private void ensureGlobalTask() {
@@ -311,19 +414,25 @@ public class SimpleMapRefresher extends JavaPlugin {
                     }
                 }
 
-                // ===== 阶段B：到点则对所有“已安排”的地图发送 =====
-                for (Map.Entry<Integer, Binding> entry : all.entrySet()) {
-                    Binding b = entry.getValue();
+                // ===== 阶段B：发送（仅发送上一 tick 采到变化的 binding）=====
+                // 先按世界缓存在线玩家列表（同一世界复用同一份列表）
+                Map<World, List<Player>> worldPlayers = new IdentityHashMap<>();
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    worldPlayers.computeIfAbsent(p.getWorld(), w -> new ArrayList<>()).add(p);
+                }
+
+                for (Binding b : all.values()) {
                     if (!b.hasPendingFrame)
                         continue;
                     if (b.scheduledSendTick != TICK)
-                        continue; // 只在下一 tick 发
+                        continue;
 
-                    for (Player p : Bukkit.getOnlinePlayers()) {
-                        if (p.getWorld() != b.world)
-                            continue;
-                        if (b.renderer.playerInRange(p)) {
-                            p.sendMap(b.view);
+                    List<Player> players = worldPlayers.get(b.world);
+                    if (players != null && !players.isEmpty()) {
+                        for (Player p : players) {
+                            if (b.renderer.playerInRange(p)) {
+                                p.sendMap(b.view);
+                            }
                         }
                     }
                     b.hasPendingFrame = false;

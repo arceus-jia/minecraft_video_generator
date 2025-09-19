@@ -50,7 +50,7 @@ if __name__ == "__main__":
     run_func_path = os.path.join(output_dir, "run.mcfunction")
     for i in range(len(images)):
         print("generate frame::", i + 1)
-        func_name = "frame_%04d" % (i + 1)
+        func_name = "frame_%05d" % (i + 1)
         if i >= 1:
             run_cmd_arr.append(
                 f"schedule function {args.datapack_name}:{func_name} {i*args.ticks}t\n"
